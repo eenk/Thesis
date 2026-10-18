@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vulcan Portfolio Matrix | Star Trek LCARS Quantitative Engine</title>
+  <title>GenAI Finance App | Vulcan Portfolio Matrix</title>
+  <meta name="description" content="Stock and ETF financial analysis single-page application built with Vite." />
+  <meta property="og:title" content="GenAI Finance App | Vulcan Portfolio Matrix" />
+  <meta property="og:description" content="Stock and ETF financial analysis single-page application built with Vite." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;600;700&family=Orbitron:wght@500;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
@@ -17,21 +20,21 @@
       <div class="lcars-elbow-top">
         <div class="lcars-elbow-curve"></div>
         <div class="lcars-elbow-bar">
-          <span class="lcars-sys-num">SYS-2407 // SECTOR 001</span>
-          <span class="lcars-title">VULCAN SCIENCE DIRECTORATE</span>
+          <span class="lcars-sys-num">SYS-2407 // SECTOR 001 // MATRIX-10</span>
+          <span class="lcars-title">VULCAN SCIENCE DIRECTORATE &bull; HIGH QUANT COUNCIL</span>
         </div>
       </div>
       <div class="lcars-header-main">
         <div class="lcars-title-block">
-          <h1>INVERSE VOLATILITY PORTFOLIO MATRIX</h1>
-          <p class="subtitle"><span class="vulcan-glyph">🖖</span> VULCAN LOGICAL QUANTITATIVE ANALYTICS &bull; <em>"KLI-KHA-ZOD"</em></p>
+          <h1>10-COMPANY INVERSE VOLATILITY PORTFOLIO MATRIX</h1>
+          <p class="subtitle"><span class="vulcan-glyph">🖖</span> VULCAN QUANTITATIVE DIVERSIFICATION &bull; <em>"KLI-KHA-ZOD"</em> (LOGIC &bull; RISK &bull; BALANCE)</p>
         </div>
         <div class="lcars-controls-header">
-          <button id="sound-toggle-btn" class="lcars-btn lcars-btn-small lcars-btn-gold" type="button" id="sound-toggle">
+          <button id="sound-toggle-btn" class="lcars-btn lcars-btn-small lcars-btn-gold" type="button">
             <span class="btn-icon">🔊</span> AUDIO: ON
           </button>
           <div class="lcars-status-pill">
-            <span class="pulse-dot"></span> VULCAN LINK ACTIVE
+            <span class="pulse-dot"></span> 10 ASSETS ACTIVE
           </div>
         </div>
       </div>
@@ -43,9 +46,14 @@
       <!-- Left Sidebar: LCARS Control Pillar & Setup -->
       <aside class="lcars-sidebar">
         <div class="lcars-panel lcars-panel-copper">
-          <div class="panel-header-bar">
-            <span class="panel-code">01 - LOGIC CONFIG</span>
-            <span class="panel-title">PORTFOLIO INPUTS</span>
+          <div class="panel-header-bar flex-between">
+            <div>
+              <span class="panel-code">01 - LOGIC CONFIG</span>
+              <span class="panel-title">PORTFOLIO INPUTS</span>
+            </div>
+            <button type="button" class="lcars-btn-ghost-sm" id="reset-default-companies-btn" title="Restore canonical 10 companies">
+              ↺ DEFAULTS
+            </button>
           </div>
 
           <form id="portfolio-config-form" class="lcars-form">
@@ -58,15 +66,98 @@
               </div>
             </div>
 
-            <!-- Ticker Inputs -->
+            <!-- 10 Ticker Inputs Grouped By Sector -->
             <div class="form-group">
-              <label>5 STOCK TICKERS</label>
-              <div class="tickers-input-grid">
-                <input type="text" class="ticker-input" id="ticker-0" value="AAPL" maxlength="6" required />
-                <input type="text" class="ticker-input" id="ticker-1" value="MSFT" maxlength="6" required />
-                <input type="text" class="ticker-input" id="ticker-2" value="NVDA" maxlength="6" required />
-                <input type="text" class="ticker-input" id="ticker-3" value="GOOGL" maxlength="6" required />
-                <input type="text" class="ticker-input" id="ticker-4" value="AMZN" maxlength="6" required />
+              <div class="tickers-header-row">
+                <label>10 COMPANIES (5 SECTORS)</label>
+                <span class="tickers-count-badge">10 / 10</span>
+              </div>
+
+              <div class="tickers-input-grid-10" id="tickers-input-grid">
+                <!-- Energy -->
+                <div class="ticker-box sector-border-energy" title="Energy: Exxon Mobil (NYSE)">
+                  <span class="ticker-num">01</span>
+                  <div class="ticker-meta">
+                    <span class="ticker-sec-label">ENERGY</span>
+                    <input type="text" class="ticker-input" id="ticker-0" value="XOM" maxlength="6" required />
+                  </div>
+                </div>
+
+                <div class="ticker-box sector-border-energy" title="Energy: Chevron (NYSE)">
+                  <span class="ticker-num">02</span>
+                  <div class="ticker-meta">
+                    <span class="ticker-sec-label">ENERGY</span>
+                    <input type="text" class="ticker-input" id="ticker-1" value="CVX" maxlength="6" required />
+                  </div>
+                </div>
+
+                <!-- Health care -->
+                <div class="ticker-box sector-border-health" title="Health care: Johnson & Johnson (NYSE)">
+                  <span class="ticker-num">03</span>
+                  <div class="ticker-meta">
+                    <span class="ticker-sec-label">HEALTH</span>
+                    <input type="text" class="ticker-input" id="ticker-2" value="JNJ" maxlength="6" required />
+                  </div>
+                </div>
+
+                <div class="ticker-box sector-border-health" title="Health care: AbbVie (NYSE)">
+                  <span class="ticker-num">04</span>
+                  <div class="ticker-meta">
+                    <span class="ticker-sec-label">HEALTH</span>
+                    <input type="text" class="ticker-input" id="ticker-3" value="ABBV" maxlength="6" required />
+                  </div>
+                </div>
+
+                <!-- Mining -->
+                <div class="ticker-box sector-border-mining" title="Mining: BHP Group ADR (NYSE)">
+                  <span class="ticker-num">05</span>
+                  <div class="ticker-meta">
+                    <span class="ticker-sec-label">MINING</span>
+                    <input type="text" class="ticker-input" id="ticker-4" value="BHP" maxlength="6" required />
+                  </div>
+                </div>
+
+                <div class="ticker-box sector-border-mining" title="Mining: Newmont (NYSE)">
+                  <span class="ticker-num">06</span>
+                  <div class="ticker-meta">
+                    <span class="ticker-sec-label">MINING</span>
+                    <input type="text" class="ticker-input" id="ticker-5" value="NEM" maxlength="6" required />
+                  </div>
+                </div>
+
+                <!-- Aerospace and defense -->
+                <div class="ticker-box sector-border-aero" title="Aerospace and defense: RTX (NYSE)">
+                  <span class="ticker-num">07</span>
+                  <div class="ticker-meta">
+                    <span class="ticker-sec-label">AERO/DEF</span>
+                    <input type="text" class="ticker-input" id="ticker-6" value="RTX" maxlength="6" required />
+                  </div>
+                </div>
+
+                <div class="ticker-box sector-border-aero" title="Aerospace and defense: Lockheed Martin (NYSE)">
+                  <span class="ticker-num">08</span>
+                  <div class="ticker-meta">
+                    <span class="ticker-sec-label">AERO/DEF</span>
+                    <input type="text" class="ticker-input" id="ticker-7" value="LMT" maxlength="6" required />
+                  </div>
+                </div>
+
+                <!-- Information technology -->
+                <div class="ticker-box sector-border-tech" title="Information technology: Microsoft (NASDAQ)">
+                  <span class="ticker-num">09</span>
+                  <div class="ticker-meta">
+                    <span class="ticker-sec-label">INFO TECH</span>
+                    <input type="text" class="ticker-input" id="ticker-8" value="MSFT" maxlength="6" required />
+                  </div>
+                </div>
+
+                <div class="ticker-box sector-border-tech" title="Information technology: Oracle (NYSE)">
+                  <span class="ticker-num">10</span>
+                  <div class="ticker-meta">
+                    <span class="ticker-sec-label">INFO TECH</span>
+                    <input type="text" class="ticker-input" id="ticker-9" value="ORCL" maxlength="6" required />
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -74,17 +165,17 @@
             <div class="form-group">
               <label for="twelvedata-key">TWELVE DATA API KEY (STORED LOCALLY)</label>
               <input id="twelvedata-key" type="password" placeholder="Key auto-saved to localStorage" />
-              <p class="field-hint">Free key at <a href="https://twelvedata.com/pricing" target="_blank" rel="noopener">twelvedata.com</a>. If omitted, Vulcan quantum simulation fallback activates seamlessly.</p>
+              <p class="field-hint">Key saved in browser. If omitted, Vulcan quantum simulation fallback activates seamlessly.</p>
             </div>
 
             <div class="form-group">
               <label for="openrouter-key">OPENROUTER API KEY (STORED LOCALLY)</label>
               <input id="openrouter-key" type="password" placeholder="sk-or-... (auto-saved)" />
-              <p class="field-hint">Used for Vulcan AI Research Assessment notes.</p>
+              <p class="field-hint">Used for Vulcan Science Directorate AI Research notes.</p>
             </div>
 
             <button type="submit" class="lcars-btn lcars-btn-block lcars-btn-amber" id="fetch-data-btn">
-              ⚡ COMPUTE VULCAN MARKET MATRIX
+              ⚡ COMPUTE 10-STOCK VULCAN MATRIX
             </button>
           </form>
         </div>
@@ -96,9 +187,9 @@
           </div>
           <div class="vulcan-quote-box">
             <blockquote id="vulcan-quote">
-              "Infinite Diversity in Infinite Combinations. Speculation is illogical; risk-adjusted diversification is paramount."
+              "Infinite Diversity in Infinite Combinations. Ten assets across five sectors eliminate idiosyncratic fragility; variance minimization is the logical imperative."
             </blockquote>
-            <span class="quote-author">&mdash; High Council of Vulcan</span>
+            <span class="quote-author">&mdash; Vulcan Academy of Sciences</span>
           </div>
         </div>
       </aside>
@@ -106,30 +197,36 @@
       <!-- Center / Right Main Content Area -->
       <main class="lcars-main">
 
-        <!-- Panel 1: 5 Stock Allocation Sliders with Lock Buttons & Co-dependence -->
+        <!-- Panel 1: 10 Stock Allocation Sliders with Lock Buttons & Co-dependence -->
         <section class="lcars-panel lcars-panel-amber" id="sliders-section">
           <div class="panel-header-bar flex-between">
             <div>
               <span class="panel-code">03 - ALLOCATION</span>
-              <span class="panel-title">CO-DEPENDENT SLIDERS (SUM = 100%)</span>
+              <span class="panel-title">10 CO-DEPENDENT SLIDERS (SUM = 100%)</span>
             </div>
             <div class="weight-total-badge" id="total-weight-badge">
               TOTAL WEIGHT: <span id="total-weight-val">100.0%</span>
             </div>
           </div>
 
+          <!-- Sector Exposure Summary Bar -->
+          <div class="sector-exposure-bar" id="sector-exposure-bar">
+            <!-- Dynamically populated sector pills -->
+          </div>
+
           <!-- Quick Optimization Presets -->
           <div class="preset-buttons-bar">
             <span class="presets-label">APPLY OPTIMIZATION PRESET:</span>
-            <button type="button" class="lcars-btn lcars-btn-sm lcars-btn-copper" id="preset-equal">EQUAL WEIGHT (20%)</button>
+            <button type="button" class="lcars-btn lcars-btn-sm lcars-btn-copper" id="preset-equal">EQUAL WEIGHT (10%)</button>
             <button type="button" class="lcars-btn lcars-btn-sm lcars-btn-gold" id="preset-invvol">INVERSE VOLATILITY</button>
             <button type="button" class="lcars-btn lcars-btn-sm lcars-btn-violet" id="preset-minvar">MIN VARIANCE</button>
             <button type="button" class="lcars-btn lcars-btn-sm lcars-btn-cyan" id="preset-maxsharpe">MAX SHARPE</button>
+            <button type="button" class="lcars-btn lcars-btn-sm lcars-btn-emerald" id="preset-sector-balance">SECTOR BALANCED (20% EA)</button>
           </div>
 
-          <!-- Sliders Container -->
+          <!-- Sliders Container for 10 Stocks -->
           <div class="sliders-list" id="sliders-list">
-            <!-- Dynamic 5 Stock Sliders will be rendered here -->
+            <!-- Dynamic 10 Stock Sliders will be rendered here -->
           </div>
         </section>
 
@@ -166,12 +263,16 @@
             </div>
           </div>
 
-          <!-- Assets Detailed Breakdown Table -->
+          <!-- Assets Detailed Breakdown Table for 10 Companies -->
           <div class="table-container">
             <table class="lcars-table" id="asset-stats-table">
               <thead>
                 <tr>
-                  <th>STOCK</th>
+                  <th>#</th>
+                  <th>SECTOR</th>
+                  <th>COMPANY</th>
+                  <th>TICKER</th>
+                  <th>EXCHANGE</th>
                   <th>CLOSE ($)</th>
                   <th>ANN RETURN</th>
                   <th>ANN VOL (&sigma;)</th>
@@ -200,7 +301,7 @@
             </button>
           </div>
           <div class="vulcan-note-body" id="vulcan-note-content">
-            <p class="placeholder-text">Click "Generate Vulcan Advisory Note" or update market data to compute logical research synthesis.</p>
+            <p class="placeholder-text">Click "Generate Vulcan Advisory Note" or compute market matrix to generate logical research synthesis.</p>
           </div>
         </section>
 
@@ -217,7 +318,7 @@
               <div class="pair-selector-wrapper">
                 <label for="corr-pair-select">PAIR:</label>
                 <select id="corr-pair-select" class="lcars-select">
-                  <!-- Populated dynamically -->
+                  <!-- Populated dynamically with intra & inter-sector pairs -->
                 </select>
               </div>
             </div>
@@ -252,7 +353,7 @@
           <section class="lcars-panel lcars-panel-chart">
             <div class="panel-header-bar">
               <span class="panel-code">09 - ALLOCATION COMPARISON</span>
-              <span class="panel-title">WEIGHT ALLOCATION BY METHOD</span>
+              <span class="panel-title">10-STOCK WEIGHT ALLOCATION BY METHOD</span>
             </div>
             <div class="chart-wrapper">
               <canvas id="chart-weights-comp"></canvas>
@@ -268,8 +369,8 @@
     <footer class="lcars-footer">
       <div class="lcars-elbow-bottom">
         <div class="lcars-elbow-bar">
-          <span>LCARS COMPUTER ENGINE v2407.4</span>
-          <span>STARFLEET COMMAND &bull; VULCAN HIGH COUNCIL</span>
+          <span>LCARS COMPUTER ENGINE v2407.4 // 10-COMPANY OPTIMIZER</span>
+          <span>STARFLEET COMMAND &bull; VULCAN HIGH COUNCIL &bull; LIVE LONG AND PROSPER</span>
         </div>
         <div class="lcars-elbow-curve-bottom"></div>
       </div>

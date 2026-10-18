@@ -46,25 +46,51 @@ function generateMockPriceHistory(ticker, seedBasePrice, seedVol, seedTrend) {
   return data;
 }
 
+export const DEFAULT_COMPANIES = [
+  { ticker: 'XOM', name: 'Exxon Mobil', sector: 'Energy', listing: 'NYSE' },
+  { ticker: 'CVX', name: 'Chevron', sector: 'Energy', listing: 'NYSE' },
+  { ticker: 'JNJ', name: 'Johnson & Johnson', sector: 'Health care', listing: 'NYSE' },
+  { ticker: 'ABBV', name: 'AbbVie', sector: 'Health care', listing: 'NYSE' },
+  { ticker: 'BHP', name: 'BHP Group ADR', sector: 'Mining', listing: 'NYSE' },
+  { ticker: 'NEM', name: 'Newmont', sector: 'Mining', listing: 'NYSE' },
+  { ticker: 'RTX', name: 'RTX', sector: 'Aerospace and defense', listing: 'NYSE' },
+  { ticker: 'LMT', name: 'Lockheed Martin', sector: 'Aerospace and defense', listing: 'NYSE' },
+  { ticker: 'MSFT', name: 'Microsoft', sector: 'Information technology', listing: 'NASDAQ' },
+  { ticker: 'ORCL', name: 'Oracle', sector: 'Information technology', listing: 'NYSE' }
+];
+
 const DEFAULT_MOCK_PROFILES = {
-  AAPL: { price: 220, vol: 0.015, trend: 0.0008 },
-  MSFT: { price: 440, vol: 0.014, trend: 0.0007 },
-  NVDA: { price: 125, vol: 0.032, trend: 0.0018 },
-  GOOGL: { price: 175, vol: 0.018, trend: 0.0005 },
-  AMZN: { price: 185, vol: 0.021, trend: 0.0009 },
-  TSLA: { price: 210, vol: 0.038, trend: -0.0004 },
-  META: { price: 500, vol: 0.024, trend: 0.0012 }
+  // Energy
+  XOM: { price: 118.5, vol: 0.016, trend: 0.0006 },
+  CVX: { price: 154.2, vol: 0.017, trend: 0.0005 },
+  // Health care
+  JNJ: { price: 162.0, vol: 0.011, trend: 0.0004 },
+  ABBV: { price: 188.4, vol: 0.014, trend: 0.0007 },
+  // Mining
+  BHP: { price: 58.6, vol: 0.021, trend: 0.0005 },
+  NEM: { price: 47.3, vol: 0.025, trend: 0.0008 },
+  // Aerospace and defense
+  RTX: { price: 124.8, vol: 0.015, trend: 0.0008 },
+  LMT: { price: 565.0, vol: 0.013, trend: 0.0007 },
+  // Information technology
+  MSFT: { price: 442.0, vol: 0.015, trend: 0.0011 },
+  ORCL: { price: 176.5, vol: 0.022, trend: 0.0013 },
+  // Legacy backups
+  AAPL: { price: 225, vol: 0.015, trend: 0.0008 },
+  NVDA: { price: 130, vol: 0.032, trend: 0.0018 },
+  GOOGL: { price: 178, vol: 0.018, trend: 0.0005 },
+  AMZN: { price: 188, vol: 0.021, trend: 0.0009 }
 };
 
 /**
- * Generate fallback data for any set of 5 tickers
+ * Generate fallback data for any set of tickers
  */
 export function getFallbackStockData(tickers) {
   const result = {};
   tickers.forEach((ticker, idx) => {
     const profile = DEFAULT_MOCK_PROFILES[ticker.toUpperCase()] || {
       price: 100 + (idx + 1) * 35,
-      vol: 0.015 + idx * 0.005,
+      vol: 0.015 + idx * 0.003,
       trend: 0.0006 * (idx % 2 === 0 ? 1 : -0.5)
     };
     result[ticker.toUpperCase()] = generateMockPriceHistory(ticker, profile.price, profile.vol, profile.trend);
@@ -73,13 +99,13 @@ export function getFallbackStockData(tickers) {
 }
 
 /**
- * Fetch 90-day price history for 5 stock tickers from Twelve Data
+ * Fetch 90-day price history for stock tickers from Twelve Data
  * Falls back gracefully to realistic simulated dataset if API key is empty/invalid or rate limited.
  */
 export async function fetchStockData(tickers, apiKey) {
   const cleanTickers = tickers.map(t => t.trim().toUpperCase()).filter(Boolean);
-  if (cleanTickers.length < 5) {
-    throw new Error('5 valid stock tickers are required.');
+  if (cleanTickers.length < 2) {
+    throw new Error('At least 2 valid stock tickers are required.');
   }
 
   if (!apiKey || apiKey.trim() === '') {

@@ -124,71 +124,139 @@ export function computeStockStats(stockDataMap) {
 }
 
 /**
- * Grid search optimization for Minimum Variance portfolio (5 dimensions)
+ * Exact Euclidean Projection onto the Probability Simplex: { w >= 0, sum(w) = 1 }
+ * Time Complexity: O(N log N)
  */
-function optimizeMinVariance(covMatrix, N) {
-  let bestWeights = Array(N).fill(1 / N);
-  let minVar = Infinity;
+export function projectToSimplex(v) {
+  const n = v.length;
+  const indices = Array.from({ length: n }, (_, i) => i);
+  indices.sort((a, b) => v[b] - v[a]);
 
-  // Generate simplex points
-  const step = 0.05;
-  function search(idx, currentWeights, remaining) {
-    if (idx === N - 1) {
-      currentWeights[idx] = remaining;
-      const varP = computePortfolioVariance(currentWeights, covMatrix);
-      if (varP < minVar) {
-        minVar = varP;
-        bestWeights = [...currentWeights];
-      }
-      return;
-    }
-
-    for (let w = 0; w <= remaining + 1e-5; w += step) {
-      const roundedW = Math.round(w * 100) / 100;
-      if (roundedW <= remaining) {
-        currentWeights[idx] = roundedW;
-        search(idx + 1, currentWeights, remaining - roundedW);
-      }
+  let cumulativeSum = 0;
+  let rho = 0;
+  for (let i = 0; i < n; i++) {
+    cumulativeSum += v[indices[i]];
+    if (v[indices[i]] + (1 - cumulativeSum) / (i + 1) > 0) {
+      rho = i;
     }
   }
 
-  search(0, Array(N).fill(0), 1.0);
-  return normalizeWeights(bestWeights);
+  let sumRho = 0;
+  for (let i = 0; i <= rho; i++) {
+    sumRho += v[indices[i]];
+  }
+  const theta = (1 - sumRho) / (rho + 1);
+
+  return v.map(val => Math.max(0, val + theta));
 }
 
 /**
- * Grid search optimization for Maximum Sharpe ratio portfolio
+ * Projected gradient descent optimization for Minimum Variance portfolio (scales to any N)
+ */
+function optimizeMinVariance(covMatrix, N) {
+  let w = Array(N).fill(1 / N);
+  const maxDiag = Math.max(...covMatrix.map((row, i) => row[i])) || 0.0001;
+  const lr = 0.5 / (maxDiag * 2);
+
+  let bestW = [...w];
+  let minVar = computePortfolioVariance(w, covMatrix);
+
+  for (let iter = 0; iter < 500; iter++) {
+    const grad = Array(N).fill(0);
+    for (let i = 0; i < N; i++) {
+      for (let j = 0; j < N; j++) {
+        grad[i] += 2 * covMatrix[i][j] * w[j];
+      }
+    }
+
+    const candidate = projectToSimplex(w.map((wi, i) => wi - lr * grad[i]));
+    const currentVar = computePortfolioVariance(candidate, covMatrix);
+
+    if (currentVar < minVar) {
+      minVar = currentVar;
+      bestW = [...candidate];
+    }
+    w = candidate;
+  }
+
+  return normalizeWeights(bestW);
+}
+
+/**
+ * Multi-seed projected gradient ascent optimization for Maximum Sharpe ratio portfolio
  */
 function optimizeMaxSharpe(annReturns, covMatrix, N, rf = 0.02) {
+  // Candidate seed portfolios
+  const seeds = [];
+  // 1. Equal weight
+  seeds.push(Array(N).fill(1 / N));
+  // 2. Individual pure assets
+  for (let i = 0; i < N; i++) {
+    const pure = Array(N).fill(0);
+    pure[i] = 1.0;
+    seeds.push(pure);
+  }
+  // 3. Proportional to excess return if positive
+  const excess = annReturns.map(r => Math.max(0, r - rf));
+  const excessSum = excess.reduce((a, b) => a + b, 0);
+  if (excessSum > 0) {
+    seeds.push(excess.map(e => e / excessSum));
+  }
+
   let bestWeights = Array(N).fill(1 / N);
   let maxSharpe = -Infinity;
 
-  const step = 0.05;
-  function search(idx, currentWeights, remaining) {
-    if (idx === N - 1) {
-      currentWeights[idx] = remaining;
-      const retP = currentWeights.reduce((sum, w, i) => sum + w * annReturns[i], 0);
-      const varP = computePortfolioVariance(currentWeights, covMatrix);
-      const volP = Math.sqrt(varP * 252);
-      const sharpe = volP > 0 ? (retP - rf) / volP : 0;
+  function evalSharpe(weights) {
+    const normW = normalizeWeights(weights);
+    const retP = normW.reduce((sum, w, i) => sum + w * annReturns[i], 0);
+    const varP = computePortfolioVariance(normW, covMatrix);
+    const volP = Math.sqrt(Math.max(1e-8, varP * 252));
+    return volP > 0 ? (retP - rf) / volP : -Infinity;
+  }
 
-      if (sharpe > maxSharpe) {
-        maxSharpe = sharpe;
-        bestWeights = [...currentWeights];
-      }
-      return;
+  // Evaluate all initial seeds
+  for (const s of seeds) {
+    const sh = evalSharpe(s);
+    if (sh > maxSharpe) {
+      maxSharpe = sh;
+      bestWeights = [...s];
     }
+  }
 
-    for (let w = 0; w <= remaining + 1e-5; w += step) {
-      const roundedW = Math.round(w * 100) / 100;
-      if (roundedW <= remaining) {
-        currentWeights[idx] = roundedW;
-        search(idx + 1, currentWeights, remaining - roundedW);
+  // Projected gradient ascent from best seed
+  let currentW = [...bestWeights];
+  const lrs = [0.05, 0.01, 0.002];
+
+  for (const lr of lrs) {
+    for (let iter = 0; iter < 200; iter++) {
+      const retP = currentW.reduce((sum, w, i) => sum + w * annReturns[i], 0);
+      const varP = computePortfolioVariance(currentW, covMatrix);
+      const volP = Math.sqrt(Math.max(1e-8, varP * 252));
+      const denom = Math.pow(volP, 3);
+
+      const grad = Array(N).fill(0);
+      for (let i = 0; i < N; i++) {
+        let covTerm = 0;
+        for (let j = 0; j < N; j++) {
+          covTerm += covMatrix[i][j] * currentW[j];
+        }
+        // dS/dw_i = mu_i / volP - ((retP - rf) * 252 * (covMatrix * w)_i) / volP^3
+        grad[i] = (annReturns[i] / volP) - ((retP - rf) * 252 * covTerm) / denom;
+      }
+
+      const nextW = projectToSimplex(currentW.map((wi, i) => wi + lr * grad[i]));
+      const nextSharpe = evalSharpe(nextW);
+
+      if (nextSharpe > maxSharpe) {
+        maxSharpe = nextSharpe;
+        bestWeights = [...nextW];
+        currentW = nextW;
+      } else {
+        currentW = nextW;
       }
     }
   }
 
-  search(0, Array(N).fill(0), 1.0);
   return normalizeWeights(bestWeights);
 }
 

@@ -1,5 +1,5 @@
 import Chart from 'chart.js/auto';
-import { fetchStockData } from './src/dataFetcher.js';
+import { fetchStockData, DEFAULT_COMPANIES } from './src/dataFetcher.js';
 import {
   computeStockStats,
   calculatePortfolioMetrics,
@@ -9,36 +9,11 @@ import {
 import { generateVulcanAnalysis } from './src/llmAdvisor.js';
 import { playLcarsClick, playLcarsLock, playLcarsChime, toggleSound } from './src/audio.js';
 
-// LocalStorage Keys
-const STORAGE_KEYS_ID = 'vulcan_finance_keys_v1';
-const STORAGE_CONFIG_ID = 'vulcan_finance_config_v1';
+// LocalStorage Keys (v2 for 10-company schema)
+const STORAGE_KEYS_ID = 'vulcan_finance_keys_v2';
+const STORAGE_CONFIG_ID = 'vulcan_finance_config_v2';
 
-// Default State
-let state = {
-  investmentAmount: 10000,
-  tickers: ['AAPL', 'MSFT', 'NVDA', 'GOOGL', 'AMZN'],
-  twelveDataKey: '',
-  openRouterKey: '',
-  stocks: [
-    { ticker: 'AAPL', weight: 20, locked: false },
-    { ticker: 'MSFT', weight: 20, locked: false },
-    { ticker: 'NVDA', weight: 20, locked: false },
-    { ticker: 'GOOGL', weight: 20, locked: false },
-    { ticker: 'AMZN', weight: 20, locked: false }
-  ],
-  selectedCorrPair: [0, 1] // Indices of stocks to correlate
-};
-
-let rawStockData = null; // { TICKER: [ { date, close, ... } ] }
-let computedStats = null;
-let charts = {
-  rollingCorr: null,
-  performanceComp: null,
-  methodsComp: null,
-  weightsComp: null
-};
-
-// Colors for Vulcan LCARS styling in Chart.js
+// Colors for Vulcan LCARS styling in Chart.js & UI
 const LCARS_COLORS = {
   amber: '#ff9c00',
   copper: '#d96b27',
@@ -49,6 +24,48 @@ const LCARS_COLORS = {
   red: '#ef4444',
   line: '#2e384d',
   charcoal: '#1e2433'
+};
+
+// Sector color mapping
+const SECTOR_META = {
+  'Energy': { color: '#ff9c00', class: 'energy', label: 'ENERGY' },
+  'Health care': { color: '#22c55e', class: 'health', label: 'HEALTH' },
+  'Mining': { color: '#d96b27', class: 'mining', label: 'MINING' },
+  'Aerospace and defense': { color: '#a855f7', class: 'aero', label: 'AERO/DEF' },
+  'Information technology': { color: '#38bdf8', class: 'tech', label: 'TECH' }
+};
+
+function getSectorMeta(sectorName) {
+  return SECTOR_META[sectorName] || { color: '#e5b324', class: 'gold', label: sectorName || 'GENERAL' };
+}
+
+// Canonical 10 companies requested by user
+export const CANONICAL_10_STOCKS = DEFAULT_COMPANIES.map(item => ({
+  ticker: item.ticker,
+  name: item.name,
+  sector: item.sector,
+  listing: item.listing,
+  weight: 10,
+  locked: false
+}));
+
+// Default State (10 companies, 10% each)
+let state = {
+  investmentAmount: 10000,
+  tickers: CANONICAL_10_STOCKS.map(s => s.ticker),
+  twelveDataKey: '',
+  openRouterKey: '',
+  stocks: JSON.parse(JSON.stringify(CANONICAL_10_STOCKS)),
+  selectedCorrPair: [0, 1] // Indices of stocks to correlate
+};
+
+let rawStockData = null; // { TICKER: [ { date, close, ... } ] }
+let computedStats = null;
+let charts = {
+  rollingCorr: null,
+  performanceComp: null,
+  methodsComp: null,
+  weightsComp: null
 };
 
 // Initialize App
@@ -63,13 +80,16 @@ document.addEventListener('DOMContentLoaded', () => {
  */
 function loadSavedState() {
   try {
-    const savedKeys = localStorage.getItem(STORAGE_KEYS_ID);
+    // Check v2 first, fallback to v1 keys if migrating
+    const savedKeys = localStorage.getItem(STORAGE_KEYS_ID) || localStorage.getItem('vulcan_finance_keys_v1');
     if (savedKeys) {
       const keys = JSON.parse(savedKeys);
       state.twelveDataKey = keys.twelveDataKey || '';
       state.openRouterKey = keys.openRouterKey || '';
-      document.getElementById('twelvedata-key').value = state.twelveDataKey;
-      document.getElementById('openrouter-key').value = state.openRouterKey;
+      const tdInput = document.getElementById('twelvedata-key');
+      const orInput = document.getElementById('openrouter-key');
+      if (tdInput) tdInput.value = state.twelveDataKey;
+      if (orInput) orInput.value = state.openRouterKey;
     }
 
     const savedConfig = localStorage.getItem(STORAGE_CONFIG_ID);
@@ -77,18 +97,25 @@ function loadSavedState() {
       const config = JSON.parse(savedConfig);
       if (config.investmentAmount) {
         state.investmentAmount = Number(config.investmentAmount);
-        document.getElementById('investment-amount').value = state.investmentAmount;
+        const invInput = document.getElementById('investment-amount');
+        if (invInput) invInput.value = state.investmentAmount;
       }
-      if (Array.isArray(config.tickers) && config.tickers.length === 5) {
+      if (Array.isArray(config.tickers) && config.tickers.length === 10) {
         state.tickers = config.tickers;
         state.tickers.forEach((t, i) => {
           const input = document.getElementById(`ticker-${i}`);
           if (input) input.value = t;
         });
       }
-      if (Array.isArray(config.stocks) && config.stocks.length === 5) {
+      if (Array.isArray(config.stocks) && config.stocks.length === 10) {
         state.stocks = config.stocks;
       }
+    } else {
+      // Sync initial UI inputs
+      state.tickers.forEach((t, i) => {
+        const input = document.getElementById(`ticker-${i}`);
+        if (input) input.value = t;
+      });
     }
   } catch (err) {
     console.warn('Failed to load saved state from localStorage:', err);
@@ -131,20 +158,43 @@ function setupEventListeners() {
     state.openRouterKey = document.getElementById('openrouter-key').value.trim();
 
     const newTickers = [];
-    for (let i = 0; i < 5; i++) {
-      const val = document.getElementById(`ticker-${i}`).value.trim().toUpperCase();
+    for (let i = 0; i < 10; i++) {
+      const input = document.getElementById(`ticker-${i}`);
+      const val = input ? input.value.trim().toUpperCase() : '';
       newTickers.push(val || `STK${i + 1}`);
     }
     state.tickers = newTickers;
 
-    // Update stock ticker labels while preserving weight/lock state
+    // Update stock ticker labels and find matching metadata if available
     state.stocks.forEach((s, i) => {
       s.ticker = state.tickers[i];
+      const match = DEFAULT_COMPANIES.find(c => c.ticker === s.ticker);
+      if (match) {
+        s.name = match.name;
+        s.sector = match.sector;
+        s.listing = match.listing;
+      }
     });
 
     saveStateToLocalStorage();
     runAnalysis();
   });
+
+  // Reset to Defaults Button
+  const resetBtn = document.getElementById('reset-default-companies-btn');
+  if (resetBtn) {
+    resetBtn.addEventListener('click', () => {
+      playLcarsChime();
+      state.stocks = JSON.parse(JSON.stringify(CANONICAL_10_STOCKS));
+      state.tickers = state.stocks.map(s => s.ticker);
+      state.tickers.forEach((t, i) => {
+        const input = document.getElementById(`ticker-${i}`);
+        if (input) input.value = t;
+      });
+      saveStateToLocalStorage();
+      runAnalysis();
+    });
+  }
 
   // Sound Toggle Button
   const soundBtn = document.getElementById('sound-toggle-btn');
@@ -158,6 +208,10 @@ function setupEventListeners() {
   document.getElementById('preset-invvol').addEventListener('click', () => applyPreset('invvol'));
   document.getElementById('preset-minvar').addEventListener('click', () => applyPreset('minvar'));
   document.getElementById('preset-maxsharpe').addEventListener('click', () => applyPreset('maxsharpe'));
+  const sectorBalBtn = document.getElementById('preset-sector-balance');
+  if (sectorBalBtn) {
+    sectorBalBtn.addEventListener('click', () => applyPreset('sector-balance'));
+  }
 
   // Vulcan AI Research Assessment
   document.getElementById('request-analysis-btn').addEventListener('click', async () => {
@@ -180,13 +234,14 @@ function setupEventListeners() {
 async function runAnalysis() {
   const fetchBtn = document.getElementById('fetch-data-btn');
   fetchBtn.disabled = true;
-  fetchBtn.innerText = '⏳ PROCESSING QUANT MATRIX...';
+  fetchBtn.innerText = '⏳ PROCESSING 10-ASSET MATRIX...';
 
   try {
     rawStockData = await fetchStockData(state.tickers, state.twelveDataKey);
     computedStats = computeStockStats(rawStockData);
 
     renderSliders();
+    renderSectorExposureBar();
     renderAssetTable();
     updateMetricsAndCharts();
     populatePairSelect();
@@ -195,21 +250,23 @@ async function runAnalysis() {
     alert(`Error running analysis: ${err.message}`);
   } finally {
     fetchBtn.disabled = false;
-    fetchBtn.innerText = '⚡ COMPUTE VULCAN MARKET MATRIX';
+    fetchBtn.innerText = '⚡ COMPUTE 10-STOCK VULCAN MATRIX';
   }
 }
 
 /**
- * Render 5 Co-dependent Sliders with Lock Buttons
+ * Render 10 Co-dependent Sliders with Lock Buttons & Rich Sector Information
  */
 function renderSliders() {
   const container = document.getElementById('sliders-list');
   container.innerHTML = '';
 
   state.stocks.forEach((stock, idx) => {
+    const secMeta = getSectorMeta(stock.sector);
     const row = document.createElement('div');
     row.className = `slider-row ${stock.locked ? 'locked' : ''}`;
     row.id = `slider-row-${idx}`;
+    row.style.borderLeftColor = secMeta.color;
 
     const dollarVal = (state.investmentAmount * (stock.weight / 100)).toLocaleString('en-US', {
       style: 'currency',
@@ -217,7 +274,15 @@ function renderSliders() {
     });
 
     row.innerHTML = `
-      <div class="ticker-tag">${stock.ticker}</div>
+      <div class="slider-asset-info">
+        <div class="slider-tag-row">
+          <span class="ticker-tag">${stock.ticker}</span>
+          <span class="sector-chip chip-${secMeta.class}">${secMeta.label}</span>
+        </div>
+        <div class="company-sub-line" title="${stock.name || stock.ticker} (${stock.listing || 'NYSE'})">
+          ${stock.name || stock.ticker} &bull; ${stock.listing || 'NYSE'}
+        </div>
+      </div>
       <button type="button" class="lock-btn ${stock.locked ? 'active' : ''}" id="lock-btn-${idx}" title="${stock.locked ? 'Unlock slider' : 'Lock slider'}">
         ${stock.locked ? '🔒' : '🔓'}
       </button>
@@ -256,7 +321,34 @@ function renderSliders() {
 }
 
 /**
- * Co-Dependent Slider Weight Rebalancer Logic
+ * Render Sector Exposure Summary Bar across 5 Sectors
+ */
+function renderSectorExposureBar() {
+  const bar = document.getElementById('sector-exposure-bar');
+  if (!bar) return;
+  bar.innerHTML = '';
+
+  const sectors = ['Energy', 'Health care', 'Mining', 'Aerospace and defense', 'Information technology'];
+
+  sectors.forEach(secName => {
+    const secMeta = getSectorMeta(secName);
+    const secStocks = state.stocks.filter(s => s.sector === secName);
+    const secWeight = secStocks.reduce((sum, s) => sum + s.weight, 0);
+    const secDollars = state.investmentAmount * (secWeight / 100);
+
+    const pill = document.createElement('div');
+    pill.className = `sector-pill sector-pill-${secMeta.class}`;
+    pill.style.borderLeftColor = secMeta.color;
+    pill.innerHTML = `
+      <span class="sector-pill-name">${secMeta.label}</span>
+      <span class="sector-pill-val">${secWeight.toFixed(1)}% <span style="font-size: 0.75rem; color: #94a3b8;">($${Math.round(secDollars).toLocaleString()})</span></span>
+    `;
+    bar.appendChild(pill);
+  });
+}
+
+/**
+ * Co-Dependent Slider Weight Rebalancer Logic for 10 Stocks
  * Ensures total weight strictly sums to 100.0%
  */
 function onSliderChange(changedIdx, newWeightVal) {
@@ -315,6 +407,7 @@ function onSliderChange(changedIdx, newWeightVal) {
   // Normalize all unlocked weights to guarantee sum == 100
   normalizeUnlockedWeights();
   updateSliderUI();
+  renderSectorExposureBar();
   updateMetricsAndCharts();
   saveStateToLocalStorage();
 }
@@ -370,7 +463,7 @@ function updateTotalWeightBadge() {
 }
 
 /**
- * Apply Optimization Presets (Equal Weight, Inverse Volatility, Min Variance, Max Sharpe)
+ * Apply Optimization Presets (Equal Weight, Inverse Volatility, Min Variance, Max Sharpe, Sector Balanced)
  */
 function applyPreset(presetType) {
   if (!computedStats) return;
@@ -385,6 +478,18 @@ function applyPreset(presetType) {
     targetWeights = computedStats.weights.min_variance;
   } else if (presetType === 'maxsharpe') {
     targetWeights = computedStats.weights.max_sharpe;
+  } else if (presetType === 'sector-balance') {
+    // 20% to each sector, split across assets in each sector
+    const sectors = ['Energy', 'Health care', 'Mining', 'Aerospace and defense', 'Information technology'];
+    const w = Array(state.stocks.length).fill(0);
+    sectors.forEach(sec => {
+      const indices = state.stocks.map((s, idx) => ({ s, idx })).filter(item => item.s.sector === sec).map(item => item.idx);
+      if (indices.length > 0) {
+        const share = (1.0 / sectors.length) / indices.length;
+        indices.forEach(idx => { w[idx] = share; });
+      }
+    });
+    targetWeights = w;
   }
 
   targetWeights.forEach((w, i) => {
@@ -392,12 +497,13 @@ function applyPreset(presetType) {
   });
 
   renderSliders();
+  renderSectorExposureBar();
   updateMetricsAndCharts();
   saveStateToLocalStorage();
 }
 
 /**
- * Render Stock Asset Statistics Table
+ * Render 10 Stock Asset Statistics Table
  */
 function renderAssetTable() {
   const tbody = document.getElementById('asset-stats-tbody');
@@ -408,17 +514,27 @@ function renderAssetTable() {
   const { tickers, priceMatrix, annReturns, annVols, weights } = computedStats;
 
   tickers.forEach((t, i) => {
+    const stockInfo = state.stocks[i] || {};
+    const secMeta = getSectorMeta(stockInfo.sector);
     const latestPrice = priceMatrix[i][priceMatrix[i].length - 1];
+    const allocDollars = state.investmentAmount * (stockInfo.weight / 100);
+
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><strong>${t}</strong></td>
+      <td>${String(i + 1).padStart(2, '0')}</td>
+      <td><span class="sector-chip chip-${secMeta.class}">${secMeta.label}</span></td>
+      <td><strong>${stockInfo.name || t}</strong></td>
+      <td style="color: ${LCARS_COLORS.amber}; font-weight: 700;">${t}</td>
+      <td>${stockInfo.listing || 'NYSE'}</td>
       <td>$${latestPrice.toFixed(2)}</td>
       <td class="${annReturns[i] >= 0 ? 'positive' : 'negative'}">${(annReturns[i] * 100).toFixed(2)}%</td>
       <td>${(annVols[i] * 100).toFixed(2)}%</td>
       <td>${(weights.inverse_vol[i] * 100).toFixed(1)}%</td>
       <td>${(weights.min_variance[i] * 100).toFixed(1)}%</td>
       <td>${(weights.max_sharpe[i] * 100).toFixed(1)}%</td>
-      <td style="color: ${LCARS_COLORS.amber}; font-weight: 700;">${state.stocks[i].weight.toFixed(1)}%</td>
+      <td style="color: ${LCARS_COLORS.amber}; font-weight: 700;">
+        ${stockInfo.weight.toFixed(1)}% <span style="font-size: 0.75rem; color: ${LCARS_COLORS.cyan};">($${Math.round(allocDollars).toLocaleString()})</span>
+      </td>
     `;
     tbody.appendChild(tr);
   });
@@ -461,21 +577,41 @@ function updateMetricsAndCharts() {
 }
 
 /**
- * Populate 90-Day Rolling Correlation Pair Dropdown
+ * Populate 90-Day Rolling Correlation Pair Dropdown with Sector Peer Pairs & Cross-Sector Pairs
  */
 function populatePairSelect() {
   const select = document.getElementById('corr-pair-select');
   select.innerHTML = '';
   const tickers = state.tickers;
 
+  // Group 1: Intra-Sector Peers
+  const intraGroup = document.createElement('optgroup');
+  intraGroup.label = '⚡ Sector Peer Pairs (Intra-Sector)';
+
+  // Group 2: Cross-Sector Pairs
+  const interGroup = document.createElement('optgroup');
+  interGroup.label = '🌐 Cross-Sector Pairs';
+
   for (let i = 0; i < tickers.length; i++) {
     for (let j = i + 1; j < tickers.length; j++) {
+      const s1 = state.stocks[i];
+      const s2 = state.stocks[j];
+      const isIntra = s1 && s2 && s1.sector && s2.sector && s1.sector === s2.sector;
+
       const option = document.createElement('option');
       option.value = `${i}-${j}`;
-      option.innerText = `${tickers[i]} / ${tickers[j]}`;
-      select.appendChild(option);
+      if (isIntra) {
+        option.innerText = `${tickers[i]} / ${tickers[j]} (${s1.sector} Peer)`;
+        intraGroup.appendChild(option);
+      } else {
+        option.innerText = `${tickers[i]} / ${tickers[j]} (${s1?.sector || 'A'} vs ${s2?.sector || 'B'})`;
+        interGroup.appendChild(option);
+      }
     }
   }
+
+  select.appendChild(intraGroup);
+  select.appendChild(interGroup);
 
   select.value = `${state.selectedCorrPair[0]}-${state.selectedCorrPair[1]}`;
 }
@@ -505,7 +641,7 @@ function updateRollingCorrChart() {
     data: {
       labels,
       datasets: [{
-        label: `${state.tickers[i]} vs ${state.tickers[j]} (30D Rolling Corr)`,
+        label: `${state.tickers[i]} vs ${state.tickers[j]} (30-Day Rolling Correlation)`,
         data: values,
         borderColor: LCARS_COLORS.cyan,
         backgroundColor: 'rgba(56, 189, 248, 0.1)',
@@ -568,7 +704,7 @@ function updatePerformanceChart(customWeights) {
           pointRadius: 0
         },
         {
-          label: 'Equal Weight',
+          label: 'Equal Weight (10% ea)',
           data: histEqual.map(d => d.value),
           borderColor: LCARS_COLORS.copper,
           borderWidth: 2,
@@ -675,7 +811,7 @@ function updateMethodsChart() {
 }
 
 /**
- * Chart 4: Portfolio Weights by Method (inverse_vol, min_variance, equal_weight, custom)
+ * Chart 4: Portfolio Weights by Method (inverse_vol, min_variance, equal_weight, custom) across 10 Stocks
  */
 function updateWeightsChart() {
   if (!computedStats) return;
@@ -729,7 +865,7 @@ function updateWeightsChart() {
         },
         x: {
           grid: { color: LCARS_COLORS.line },
-          ticks: { color: '#fff', font: { family: 'Orbitron' } }
+          ticks: { color: '#fff', font: { family: 'Orbitron', size: 10 } }
         }
       },
       plugins: {

@@ -301,18 +301,82 @@ body.lcars-body {
   box-shadow: 0 0 6px rgba(255, 156, 0, 0.3);
 }
 
-.tickers-input-grid {
+.tickers-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.2rem;
+}
+
+.tickers-count-badge {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  background-color: var(--lcars-charcoal);
+  color: var(--lcars-gold);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+}
+
+.tickers-input-grid-10 {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
-  gap: 0.3rem;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.45rem;
+  max-height: 290px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.ticker-box {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  background-color: var(--lcars-bg);
+  border: 1px solid var(--lcars-line);
+  border-left: 3px solid var(--lcars-line);
+  border-radius: 6px;
+  padding: 0.35rem 0.5rem;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+
+.ticker-box:hover {
+  background-color: rgba(255, 156, 0, 0.05);
+}
+
+.sector-border-energy { border-left-color: #ff9c00 !important; }
+.sector-border-health { border-left-color: #22c55e !important; }
+.sector-border-mining { border-left-color: #d96b27 !important; }
+.sector-border-aero { border-left-color: #a855f7 !important; }
+.sector-border-tech { border-left-color: #38bdf8 !important; }
+
+.ticker-num {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--lcars-text-dim);
+}
+
+.ticker-meta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.ticker-sec-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--lcars-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .ticker-input {
   text-transform: uppercase;
-  text-align: center;
+  text-align: left;
   font-weight: 700;
-  padding: 0.4rem 0.2rem !important;
+  padding: 0.25rem 0.4rem !important;
   font-size: 0.85rem !important;
+  width: 100% !important;
+  border-radius: 4px !important;
 }
 
 .field-hint {
@@ -357,6 +421,23 @@ body.lcars-body {
   transform: translateY(1px);
 }
 
+.lcars-btn-ghost-sm {
+  background: transparent;
+  border: 1px solid var(--lcars-line);
+  color: var(--lcars-gold);
+  border-radius: 6px;
+  padding: 0.2rem 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.lcars-btn-ghost-sm:hover {
+  border-color: var(--lcars-gold);
+  background-color: rgba(229, 179, 36, 0.1);
+}
+
 .lcars-btn-block { width: 100%; }
 
 .lcars-btn-amber { background-color: var(--lcars-amber); color: #000; }
@@ -364,6 +445,7 @@ body.lcars-body {
 .lcars-btn-gold { background-color: var(--lcars-gold); color: #000; }
 .lcars-btn-violet { background-color: var(--lcars-violet); color: #fff; }
 .lcars-btn-cyan { background-color: var(--lcars-cyan); color: #000; }
+.lcars-btn-emerald { background-color: #22c55e; color: #000; }
 .lcars-btn-sm { padding: 0.35rem 0.75rem; font-size: 0.8rem; border-radius: 12px; }
 
 /* Vulcan Quote */
@@ -403,6 +485,50 @@ body.lcars-body {
   color: var(--lcars-amber);
 }
 
+/* Sector Exposure Bar */
+.sector-exposure-bar {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.85rem;
+  padding: 0.6rem 0.85rem;
+  background-color: var(--lcars-bg);
+  border-radius: 8px;
+  border: 1px solid var(--lcars-line);
+}
+
+.sector-pill {
+  flex: 1;
+  min-width: 130px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.35rem 0.55rem;
+  background-color: var(--lcars-panel-bg);
+  border-radius: 6px;
+  border-left: 3px solid var(--lcars-amber);
+}
+
+.sector-pill-name {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--lcars-text-dim);
+  text-transform: uppercase;
+}
+
+.sector-pill-val {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--lcars-text);
+}
+
+.sector-pill-energy { border-left-color: #ff9c00; }
+.sector-pill-health { border-left-color: #22c55e; }
+.sector-pill-mining { border-left-color: #d96b27; }
+.sector-pill-aero { border-left-color: #a855f7; }
+.sector-pill-tech { border-left-color: #38bdf8; }
+
 .preset-buttons-bar {
   display: flex;
   align-items: center;
@@ -426,25 +552,26 @@ body.lcars-body {
 .sliders-list {
   display: flex;
   flex-direction: column;
-  gap: 0.85rem;
+  gap: 0.65rem;
 }
 
 .slider-row {
   display: grid;
-  grid-template-columns: 80px 48px 1fr 70px 110px;
+  grid-template-columns: 210px 42px 1fr 70px 110px;
   align-items: center;
   gap: 0.75rem;
   background-color: var(--lcars-bg);
-  padding: 0.6rem 0.85rem;
+  padding: 0.5rem 0.85rem;
   border-radius: 8px;
   border: 1px solid var(--lcars-line);
-  transition: border-color 0.2s;
+  border-left: 4px solid var(--lcars-amber);
+  transition: border-color 0.2s, background-color 0.2s;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
   .slider-row {
-    grid-template-columns: 1fr 1fr;
-    gap: 0.5rem;
+    grid-template-columns: 1fr;
+    gap: 0.4rem;
   }
 }
 
@@ -453,15 +580,50 @@ body.lcars-body {
   background-color: rgba(217, 107, 39, 0.05);
 }
 
+.slider-asset-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  overflow: hidden;
+}
+
+.slider-tag-row {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 .ticker-tag {
   font-family: var(--font-header);
   font-size: 0.95rem;
   font-weight: 700;
   color: var(--lcars-amber);
   background-color: var(--lcars-charcoal);
-  padding: 0.3rem 0.6rem;
-  border-radius: 6px;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
   text-align: center;
+}
+
+.sector-chip {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+}
+
+.chip-energy { background-color: rgba(255, 156, 0, 0.2); color: #ff9c00; }
+.chip-health { background-color: rgba(34, 197, 94, 0.2); color: #22c55e; }
+.chip-mining { background-color: rgba(217, 107, 39, 0.2); color: #d96b27; }
+.chip-aero { background-color: rgba(168, 85, 247, 0.2); color: #c084fc; }
+.chip-tech { background-color: rgba(56, 189, 248, 0.2); color: #38bdf8; }
+
+.company-sub-line {
+  font-size: 0.75rem;
+  color: var(--lcars-text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .lock-btn {
