@@ -1,0 +1,8 @@
+{
+  "name": "GenAI Finance App",
+  "description": "Stock and ETF financial analysis single-page application built with Vite.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

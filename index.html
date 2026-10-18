@@ -1,0 +1,282 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vulcan Portfolio Matrix | Star Trek LCARS Quantitative Engine</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Antonio:wght@400;600;700&family=Orbitron:wght@500;700;900&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body class="lcars-body">
+  <div class="lcars-container">
+
+    <!-- LCARS Header Frame -->
+    <header class="lcars-header" id="lcars-header">
+      <div class="lcars-elbow-top">
+        <div class="lcars-elbow-curve"></div>
+        <div class="lcars-elbow-bar">
+          <span class="lcars-sys-num">SYS-2407 // SECTOR 001</span>
+          <span class="lcars-title">VULCAN SCIENCE DIRECTORATE</span>
+        </div>
+      </div>
+      <div class="lcars-header-main">
+        <div class="lcars-title-block">
+          <h1>INVERSE VOLATILITY PORTFOLIO MATRIX</h1>
+          <p class="subtitle"><span class="vulcan-glyph">🖖</span> VULCAN LOGICAL QUANTITATIVE ANALYTICS &bull; <em>"KLI-KHA-ZOD"</em></p>
+        </div>
+        <div class="lcars-controls-header">
+          <button id="sound-toggle-btn" class="lcars-btn lcars-btn-small lcars-btn-gold" type="button" id="sound-toggle">
+            <span class="btn-icon">🔊</span> AUDIO: ON
+          </button>
+          <div class="lcars-status-pill">
+            <span class="pulse-dot"></span> VULCAN LINK ACTIVE
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Layout Grid -->
+    <div class="lcars-layout">
+
+      <!-- Left Sidebar: LCARS Control Pillar & Setup -->
+      <aside class="lcars-sidebar">
+        <div class="lcars-panel lcars-panel-copper">
+          <div class="panel-header-bar">
+            <span class="panel-code">01 - LOGIC CONFIG</span>
+            <span class="panel-title">PORTFOLIO INPUTS</span>
+          </div>
+
+          <form id="portfolio-config-form" class="lcars-form">
+            <!-- Amount Invested Field -->
+            <div class="form-group">
+              <label for="investment-amount">TOTAL INVESTMENT ($ USD)</label>
+              <div class="input-with-symbol">
+                <span class="currency-symbol">$</span>
+                <input id="investment-amount" type="number" min="100" step="100" value="10000" placeholder="10000" required />
+              </div>
+            </div>
+
+            <!-- Ticker Inputs -->
+            <div class="form-group">
+              <label>5 STOCK TICKERS</label>
+              <div class="tickers-input-grid">
+                <input type="text" class="ticker-input" id="ticker-0" value="AAPL" maxlength="6" required />
+                <input type="text" class="ticker-input" id="ticker-1" value="MSFT" maxlength="6" required />
+                <input type="text" class="ticker-input" id="ticker-2" value="NVDA" maxlength="6" required />
+                <input type="text" class="ticker-input" id="ticker-3" value="GOOGL" maxlength="6" required />
+                <input type="text" class="ticker-input" id="ticker-4" value="AMZN" maxlength="6" required />
+              </div>
+            </div>
+
+            <!-- API Keys Local Storage -->
+            <div class="form-group">
+              <label for="twelvedata-key">TWELVE DATA API KEY (STORED LOCALLY)</label>
+              <input id="twelvedata-key" type="password" placeholder="Key auto-saved to localStorage" />
+              <p class="field-hint">Free key at <a href="https://twelvedata.com/pricing" target="_blank" rel="noopener">twelvedata.com</a>. If omitted, Vulcan quantum simulation fallback activates seamlessly.</p>
+            </div>
+
+            <div class="form-group">
+              <label for="openrouter-key">OPENROUTER API KEY (STORED LOCALLY)</label>
+              <input id="openrouter-key" type="password" placeholder="sk-or-... (auto-saved)" />
+              <p class="field-hint">Used for Vulcan AI Research Assessment notes.</p>
+            </div>
+
+            <button type="submit" class="lcars-btn lcars-btn-block lcars-btn-amber" id="fetch-data-btn">
+              ⚡ COMPUTE VULCAN MARKET MATRIX
+            </button>
+          </form>
+        </div>
+
+        <div class="lcars-panel lcars-panel-charcoal">
+          <div class="panel-header-bar">
+            <span class="panel-code">02 - PHILOSOPHY</span>
+            <span class="panel-title">VULCAN DIRECTIVE</span>
+          </div>
+          <div class="vulcan-quote-box">
+            <blockquote id="vulcan-quote">
+              "Infinite Diversity in Infinite Combinations. Speculation is illogical; risk-adjusted diversification is paramount."
+            </blockquote>
+            <span class="quote-author">&mdash; High Council of Vulcan</span>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Center / Right Main Content Area -->
+      <main class="lcars-main">
+
+        <!-- Panel 1: 5 Stock Allocation Sliders with Lock Buttons & Co-dependence -->
+        <section class="lcars-panel lcars-panel-amber" id="sliders-section">
+          <div class="panel-header-bar flex-between">
+            <div>
+              <span class="panel-code">03 - ALLOCATION</span>
+              <span class="panel-title">CO-DEPENDENT SLIDERS (SUM = 100%)</span>
+            </div>
+            <div class="weight-total-badge" id="total-weight-badge">
+              TOTAL WEIGHT: <span id="total-weight-val">100.0%</span>
+            </div>
+          </div>
+
+          <!-- Quick Optimization Presets -->
+          <div class="preset-buttons-bar">
+            <span class="presets-label">APPLY OPTIMIZATION PRESET:</span>
+            <button type="button" class="lcars-btn lcars-btn-sm lcars-btn-copper" id="preset-equal">EQUAL WEIGHT (20%)</button>
+            <button type="button" class="lcars-btn lcars-btn-sm lcars-btn-gold" id="preset-invvol">INVERSE VOLATILITY</button>
+            <button type="button" class="lcars-btn lcars-btn-sm lcars-btn-violet" id="preset-minvar">MIN VARIANCE</button>
+            <button type="button" class="lcars-btn lcars-btn-sm lcars-btn-cyan" id="preset-maxsharpe">MAX SHARPE</button>
+          </div>
+
+          <!-- Sliders Container -->
+          <div class="sliders-list" id="sliders-list">
+            <!-- Dynamic 5 Stock Sliders will be rendered here -->
+          </div>
+        </section>
+
+        <!-- Panel 2: Portfolio Return & Metrics Display -->
+        <section class="lcars-panel lcars-panel-gold" id="metrics-section">
+          <div class="panel-header-bar">
+            <span class="panel-code">04 - CALCULATED RETURNS</span>
+            <span class="panel-title">PORTFOLIO YIELD & RISK EVALUATION</span>
+          </div>
+
+          <div class="kpi-grid">
+            <div class="kpi-card lcars-kpi-amber">
+              <span class="kpi-label">INVESTMENT VALUE</span>
+              <span class="kpi-val" id="kpi-portfolio-val">$10,000.00</span>
+              <span class="kpi-sub" id="kpi-gain-val">+$0.00 (0.00%)</span>
+            </div>
+
+            <div class="kpi-card lcars-kpi-gold">
+              <span class="kpi-label">EXPECTED RETURN (ANN)</span>
+              <span class="kpi-val" id="kpi-exp-return">0.00%</span>
+              <span class="kpi-sub">Annualized Yield</span>
+            </div>
+
+            <div class="kpi-card lcars-kpi-violet">
+              <span class="kpi-label">PORTFOLIO VOLATILITY (&sigma;)</span>
+              <span class="kpi-val" id="kpi-portfolio-vol">0.00%</span>
+              <span class="kpi-sub">Standard Deviation</span>
+            </div>
+
+            <div class="kpi-card lcars-kpi-cyan">
+              <span class="kpi-label">SHARPE RATIO</span>
+              <span class="kpi-val" id="kpi-sharpe">0.00</span>
+              <span class="kpi-sub">Risk-Adjusted Efficiency</span>
+            </div>
+          </div>
+
+          <!-- Assets Detailed Breakdown Table -->
+          <div class="table-container">
+            <table class="lcars-table" id="asset-stats-table">
+              <thead>
+                <tr>
+                  <th>STOCK</th>
+                  <th>CLOSE ($)</th>
+                  <th>ANN RETURN</th>
+                  <th>ANN VOL (&sigma;)</th>
+                  <th>INVERSE VOL WT</th>
+                  <th>MIN VAR WT</th>
+                  <th>MAX SHARPE WT</th>
+                  <th>MANUAL ALLOC</th>
+                </tr>
+              </thead>
+              <tbody id="asset-stats-tbody">
+                <!-- Populated via JS -->
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Panel 3: Vulcan AI Research Note -->
+        <section class="lcars-panel lcars-panel-violet" id="vulcan-note-section">
+          <div class="panel-header-bar flex-between">
+            <div>
+              <span class="panel-code">05 - VULCAN INTELLIGENCE</span>
+              <span class="panel-title">SCIENCE DIRECTORATE ASSESSMENT</span>
+            </div>
+            <button type="button" class="lcars-btn lcars-btn-sm lcars-btn-violet" id="request-analysis-btn">
+              🧠 GENERATE VULCAN ADVISORY NOTE
+            </button>
+          </div>
+          <div class="vulcan-note-body" id="vulcan-note-content">
+            <p class="placeholder-text">Click "Generate Vulcan Advisory Note" or update market data to compute logical research synthesis.</p>
+          </div>
+        </section>
+
+        <!-- Panel 4: Charts Grid (4 Required Charts!) -->
+        <div class="charts-grid">
+
+          <!-- Chart 1: 90-Day Rolling Correlation -->
+          <section class="lcars-panel lcars-panel-chart">
+            <div class="panel-header-bar flex-between">
+              <div>
+                <span class="panel-code">06 - CORRELATION</span>
+                <span class="panel-title">90-DAY ROLLING CORRELATION</span>
+              </div>
+              <div class="pair-selector-wrapper">
+                <label for="corr-pair-select">PAIR:</label>
+                <select id="corr-pair-select" class="lcars-select">
+                  <!-- Populated dynamically -->
+                </select>
+              </div>
+            </div>
+            <div class="chart-wrapper">
+              <canvas id="chart-rolling-corr"></canvas>
+            </div>
+          </section>
+
+          <!-- Chart 2: Cumulative Growth Comparison Chart -->
+          <section class="lcars-panel lcars-panel-chart">
+            <div class="panel-header-bar">
+              <span class="panel-code">07 - PERFORMANCE</span>
+              <span class="panel-title">PORTFOLIO INVESTMENT GROWTH ($) COMPARISON</span>
+            </div>
+            <div class="chart-wrapper">
+              <canvas id="chart-performance-comp"></canvas>
+            </div>
+          </section>
+
+          <!-- Chart 3: 3 Methods Calculation Graph (EqualWeight, MinVariance, MaxSharpe) -->
+          <section class="lcars-panel lcars-panel-chart">
+            <div class="panel-header-bar">
+              <span class="panel-code">08 - OPTIMIZATION METHODS</span>
+              <span class="panel-title">EQUAL WEIGHT vs MIN VARIANCE vs MAX SHARPE</span>
+            </div>
+            <div class="chart-wrapper">
+              <canvas id="chart-methods-comp"></canvas>
+            </div>
+          </section>
+
+          <!-- Chart 4: Portfolio Weights by Method (inverse_vol, min_variance, equal_weight, custom) -->
+          <section class="lcars-panel lcars-panel-chart">
+            <div class="panel-header-bar">
+              <span class="panel-code">09 - ALLOCATION COMPARISON</span>
+              <span class="panel-title">WEIGHT ALLOCATION BY METHOD</span>
+            </div>
+            <div class="chart-wrapper">
+              <canvas id="chart-weights-comp"></canvas>
+            </div>
+          </section>
+
+        </div>
+
+      </main>
+    </div>
+
+    <!-- LCARS Footer Frame -->
+    <footer class="lcars-footer">
+      <div class="lcars-elbow-bottom">
+        <div class="lcars-elbow-bar">
+          <span>LCARS COMPUTER ENGINE v2407.4</span>
+          <span>STARFLEET COMMAND &bull; VULCAN HIGH COUNCIL</span>
+        </div>
+        <div class="lcars-elbow-curve-bottom"></div>
+      </div>
+    </footer>
+
+  </div>
+
+  <script type="module" src="./main.js"></script>
+</body>
+</html>
